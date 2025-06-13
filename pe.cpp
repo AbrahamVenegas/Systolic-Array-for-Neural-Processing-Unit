@@ -3,6 +3,8 @@
 using namespace std;
 
 // Clase PE para el arreglo sistolico
+// inputs: weight, temp_left, temp_up, 
+// outputs: result_down, result_right
 class PE {
     public:
         // Variables (flip-flops)
@@ -43,9 +45,7 @@ class PE {
         }
 
         return 1;
-    }
-
-    
+    }    
  
 };
 
@@ -81,7 +81,7 @@ int main() {
                                      {3, 1.7, 1.8, 1.9}};
 
     // Definir los tamanos de las matrices cuadradas
-    int n = 3;
+    int n = 4;
 
     // Asignar pesos a los PEs (desde el control unit)
     for (int i = 0; i < n; ++i) {
@@ -96,6 +96,9 @@ int main() {
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < n; ++j) {
             pe_array[0][j].temp_up = input_up[j][i]; // Cargar el valor de entrada
+            
+            
+            // Clock
             for (int i = 0; i < size; ++i) {
                 for (int j = 0; j < size; ++j) {
                     pe_array[i][j].update(); // Actualizar cada PE
