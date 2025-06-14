@@ -3,19 +3,23 @@
 using namespace std;
 
 // Clase PE para el arreglo sistolico
-// inputs: weight, temp_left, temp_up, 
+// inputs: clk, rst, weight, temp_left, temp_up, 
 // outputs: result_down, result_right
 class PE {
     public:
         // Variables (flip-flops)
         float weight;
         float calc;
-        bool ready = false; // Indica si los PEs terminaron su trabajo
+        int state = 0; // Indica si el PE esta activo
+        //bool ready = false; // Indica si los PEs terminaron su trabajo
 
         // PEs vecinos (conexiones a los fliplops vecinos como pipelines)
         PE *down, *right;
-        float temp_left = 0; // Un flip-flop para almacenar el valor de la izquierda
-        float temp_up = 0; // Un flip-flop para almacenar el valor de arriba
+        float temp_left = 0; // Salida para el PE de la izquierda
+        float temp_up = 0; // Salida para el PE de arriba
+
+        float temp_left_2 = 0; // Un flip-flop para almacenar el valor de la izquierda
+        float temp_up_2 = 0; // Un flip-flop para almacenar el valor de arriba
 
     // Constructor
     PE(PE* down, PE* right) {
@@ -31,15 +35,15 @@ class PE {
 
         // Multiplica el valor de entrada de arriba por el peso y lo suma al valor de entrada de la izquierda 
         // (logica combinacional)
-        calc = (temp_up * weight) + temp_left;
+        calc = (temp_up_2 * weight) + temp_left_2;
+        temp_left_2 = temp_left; 
+        temp_up_2 = temp_up; 
 
         // Las validaciones y el ready no se hacen en el hardware, pero hay que pasar los valores temps a los vecinos
         if (right != nullptr) {
             right->temp_left = calc;
-        } else {
-            // Si no hay PE a la derecha, se considera que el valor de salida es el resultado final
-            ready = true;
         }
+
         if (down != nullptr) {
             down->temp_up = temp_up; // Pasa el valor calculado al PE de abajo
         }
@@ -49,9 +53,40 @@ class PE {
  
 };
 
+class Counter {
+    public:
+        int count = 0; // Contador para el reloj
+
+        // Incrementa el contador
+        void tick() {
+            count++;
+        }
+
+        // Resetea el contador
+        void reset() {
+            count = 0;
+        }
+
+};
+
 // Probar la clase PE en un arreglo sistolico 4x4
 
 int main() {
+
+    /*
+    Ejemplo arreglo sistolico 4x4:
+    int n = 4; // Tamaño de la matriz cuadrada
+    for (int t = 0; t < 2 * n - 1; ++t) {
+        for (int i = 0; i < n; ++i) {
+            int j = t - i;
+            if (j >= 0 && j < n) {
+                cout << "PE[" << i << "][" << j << "], ";
+            }
+        }
+        cout << endl;
+    }
+    */
+
     // Crear una matriz de PEs
     const int size = 4;
 
@@ -71,50 +106,81 @@ int main() {
     }
 
     // Crear matrices de ejemplo
+
+    // Definir los tamanos de las matrices cuadradas
+    int n = 4;
+    // Input_up es la matriz A
     vector<vector<float>> input_up = {{1, 2, 3, 4},
                                       {1, 6.0, 7.0, 8.0}, 
                                       {2, 10.0, 11.0, 12.0}, 
                                       {3, 14.0, 15.0, 16.0}};
+    // Weights es la matriz B
     vector<vector<float>> weights = {{1, 2, 3, 4},
                                      {1, 1.0, 1.1, 1.2}, 
                                      {2, 1.4, 1.5, 1.6}, 
                                      {3, 1.7, 1.8, 1.9}};
 
-    // Definir los tamanos de las matrices cuadradas
-    int n = 4;
+    
 
     // Asignar pesos a los PEs (desde el control unit)
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < n; ++j) {
-            pe_array[i][j].weight = weights[i][j];
+            // Se debe hace la transpuesta de la matriz de pesos
+            pe_array[i][j].weight = weights[j][i];
 
         }
     }
+
+    cout << "Pesos" << endl;
+    for (int i2 = 0; i2 < n; ++i2) {
+        for (int j2 = 0; j2 < n; ++j2) {
+            cout << pe_array[i2][j2].weight << " ";
+        }
+        cout << endl;
+    }
+    cout << endl;
 
     // Simular el procesamiento de los PEs
     vector<vector<float>> output(size, vector<float>(size, 0.0));     // Almacenamiento de datos de salida
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            pe_array[0][j].temp_up = input_up[j][i]; // Cargar el valor de entrada
-            
-            
-            // Clock
-            for (int i = 0; i < size; ++i) {
-                for (int j = 0; j < size; ++j) {
-                    pe_array[i][j].update(); // Actualizar cada PE
-                }
-            }
-        }   
 
-        // Guardar en una matriz los resultados de los PEs listos
-        for (int i2 = 0; i2 < size; ++i2) {
-            if (pe_array[i2][3].ready) {
-                //cout << "PE[" << i2 << "][" << 3 << "] = " << pe_array[i2][3].calc << endl;
-                output[i2][i] = pe_array[i2][3].calc; // Guardar el resultado en la matriz de salida
-            }
 
+    int icol0, icol1, icol2, icol3;
+    for (int i = 0; i < n * 2; ++i) {
+        // Definir los indices de las columnas de entrada
+        icol0 = (i < n) ? i : 0xFF;
+        icol1 = (i - 1 < n && i - 1 >= 0) ? i - 1 : 0xFF;
+        icol2 = (i - 2 < n && i - 2 >= 0) ? i - 2 : 0xFF;
+        icol3 = (i - 3 < n && i - 3 >= 0) ? i - 3 : 0xFF;
+
+        // Cargar los valores de entrada en los PEs de la primera fila
+        // Si el indice es 0xFF, significa que no hay valor de entrada, se carga 0.0
+        pe_array[0][0].temp_up = (icol0 != 0xFF) ? input_up[icol0][0] : 0.0; // Cargar el valor de entrada
+        pe_array[0][1].temp_up = (icol1 != 0xFF) ? input_up[icol1][1] : 0.0; // Cargar el valor de entrada
+        pe_array[0][2].temp_up = (icol2 != 0xFF) ? input_up[icol2][2] : 0.0; // Cargar el valor de entrada
+        pe_array[0][3].temp_up = (icol3 != 0xFF) ? input_up[icol3][3] : 0.0; // Cargar el valor de entrada
+        
+        // Actualizar cada PE
+        for (int i2 = 0; i2 < n; ++i2) {
+            for (int j2 = 0; j2 < n; ++j2) {
+                pe_array[i2][j2].update(); // Actualizar cada PE
+            }
         }
+        
+        // Guardar en una matriz los resultados de los PEs
+        if (i >= 4) {
+            for (int j = 0; j < n; ++j) {
+                output[i % 4][j] = pe_array[j][3].calc; // Guardar el resultado en la matriz de salida
+            }
+        }
+        
     }
+
+    /* Salidas: (En este caso, ciclo + 1)
+    Ciclo 4: C00, C01, C02, C03
+    Ciclo 5: C10, C11, C12, C13
+    Ciclo 6: C20, C21, C22, C23
+    Ciclo 7: C30, C31, C32, C33
+    */
 
     // Imprimir la matriz de salida
     cout << "Matriz de salida:" << endl;
