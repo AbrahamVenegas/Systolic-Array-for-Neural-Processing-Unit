@@ -40,6 +40,7 @@ module main_tb;
             end
         end
 
+        // Asignar los in_left de los primeros PEs
         in_left[0] = 0;
         in_left[1] = 0;
         in_left[2] = 0;

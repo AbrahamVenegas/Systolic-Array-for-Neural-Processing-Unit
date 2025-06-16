@@ -34,18 +34,22 @@ module main #(parameter WIDTH = 16)
 					.in_left(link_h[i][j]),
 				   .in_up(link_v[i][j]),
 				   .out_right(link_h[i][j+1]),
-				   .out_down(link_v[i+1][j]),
-				   .ready()
+				   .out_down(link_v[i+1][j])
 				 );
 			end
 		end
 	endgenerate
-
-	// Asignar salidas finales
-	assign out_right[0] = link_h[0][4];
-	assign out_right[1] = link_h[1][4];
-	assign out_right[2] = link_h[2][4];
-	assign out_right[3] = link_h[3][4];
+	
+	generate
+		for (i = 0; i < 4; i++) begin : row_relu
+			ReLU #(.WIDTH(WIDTH)) relu_inst
+			(
+				.in_val(link_h[i][4]),
+				.out_val(out_right[i])
+			);
+		end
+		
+	endgenerate
 
 	assign out_down[0] = link_v[4][0];
 	assign out_down[1] = link_v[4][1];
