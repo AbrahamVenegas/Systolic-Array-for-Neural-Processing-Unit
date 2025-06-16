@@ -1,0 +1,59 @@
+# Ignorar todo por defecto
+*
+
+# Incluir carpetas que sí deben rastrearse
+!*/             # raíz
+!ip/
+!testbench/
+!modules/
+
+# Incluir su contenido (esto es necesario para que Git vea los archivos dentro)
+!ip/**
+!testbench/**
+!modules/**
+
+# Incluir explícitamente archivos importantes del proyecto raíz
+!*.qpf          # Quartus Project File
+!*.qsf          # Quartus Settings File
+!*.qws          # Workspace (opcional, puedes omitirlo si es personal)
+!*.bdf          # Block Design File
+!*.bsf          # Block Symbol File
+!*.v            # Verilog
+!*.sv           # SystemVerilog
+!*.vhd          # VHDL
+!*.tcl          # Tcl scripts
+!*.sdc          # Time constraints
+!.gitignore
+
+# Ignorar binarios y archivos generados
+*.sof
+*.pof
+*.rpt
+*.smsg
+*.summary
+*.jdi
+*.pin
+*.sld
+*.cmp
+*.qdf
+*.qdb
+*.bak
+*.ddb
+*.svf
+*.vcd
+*.vhw
+*.done
+*.map
+*.fit.*
+*.sta.*
+*.asm.*
+*.jbc
+*.log
+*.tbd
+*.raw
+
+# Ignorar carpetas de build
+db/
+incremental_db/
+output_files/
+simulation/
