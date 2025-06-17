@@ -1,3 +1,5 @@
+
+`timescale 1ns/1ps
 module PE #(parameter int WIDTH = 16) 
 (
 	input  logic clk,

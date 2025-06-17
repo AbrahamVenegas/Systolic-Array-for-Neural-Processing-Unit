@@ -1,3 +1,6 @@
+
+`timescale 1ns/1ps
+
 module ReLU #(parameter int WIDTH = 16)
 (
 	input  logic signed [WIDTH-1:0] in_val,
