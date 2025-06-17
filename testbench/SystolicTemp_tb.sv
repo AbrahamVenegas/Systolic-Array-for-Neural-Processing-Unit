@@ -13,13 +13,13 @@ module SystolicTemp_tb;
     logic signed [WIDTH-1:0] mem_read;
     logic [11:0] addr_A, addr_B, addr_C;
     logic [3:0] n;
-
+	 logic signed [WIDTH-1:0] result_col [N - 1:0];
     logic mem_write;
+	 logic [7:0] cycle_count;
     logic signed [WIDTH-1:0] mem_data_write;
     logic [11:0] act_addr;
     logic signed [WIDTH-1:0] weight_output [N - 1:0][N - 1:0];
     logic signed [WIDTH-1:0] data_up [N - 1:0];
-    logic signed [WIDTH-1:0] result_col [N - 1:0];
     state_t fsm_state;
 
     // Memorias de prueba
@@ -43,7 +43,8 @@ module SystolicTemp_tb;
         .weight_output(weight_output),
         .data_up(data_up),
         .result_col(result_col),
-        .fsm_state(fsm_state)
+        .fsm_state(fsm_state),
+		  .cycle_count(cycle_count)
     );
 
     // Generador de reloj
@@ -78,7 +79,7 @@ module SystolicTemp_tb;
     end
 
     // Simulación de memoria y captura de resultados
-    always @(posedge clk) begin
+    always @(negedge clk) begin
         // Simula lectura de memoria para A
         if (fsm_state == WAITING_MEMORY_A) begin
             mem_read <= mem_A[act_addr - addr_A];

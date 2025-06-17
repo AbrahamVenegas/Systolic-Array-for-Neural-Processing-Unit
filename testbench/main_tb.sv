@@ -1,3 +1,5 @@
+`timescale 1ns/1ps
+
 module main_tb;
 
     parameter WIDTH = 16;
@@ -30,8 +32,10 @@ module main_tb;
         // Inicialización
         clk = 0;
         rst = 0;
-        #10;
+        #10
         rst = 1;
+		  #10
+        rst = 0;
 
         // Cargar pesos de forma manual (por compatibilidad)
         for (i = 0; i < 4; i = i + 1) begin

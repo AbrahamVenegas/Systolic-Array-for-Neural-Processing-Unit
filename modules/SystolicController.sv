@@ -17,6 +17,7 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
     output logic [11:0] act_addr,
     output logic signed [WIDTH - 1:0] weight_output [N - 1:0][N - 1:0],
     output logic signed [WIDTH - 1:0] data_up [N - 1:0],
+	 output logic [7:0] cycle_count,
 
     // Temporales
     output state_t fsm_state
@@ -31,11 +32,12 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
     logic [WIDTH - 1:0] matrix_C [N - 1:0][N - 1:0];
 
     // Flip-flops
-    logic [7:0] cycle_count, cycle_count_next;
-    logic [7:0] act_addr_next;
-    logic [7:0] mem_data_write_next;
-    logic       mem_write_next;
+    logic [7:0] cycle_count_next;
 
+    logic [7:0] act_addr_next;
+    logic [WIDTH - 1:0] mem_data_write_next;
+    logic       mem_write_next;
+	 logic signed [WIDTH - 1:0] data_up_next [N - 1:0];
     // Maquina de estados parte secuencial 
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
@@ -44,12 +46,19 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
             act_addr       <= 0;
             mem_write      <= 0;
             mem_data_write <= 0;
+            for (int i = 0; i < N; i++) begin
+                data_up[i] <= 0;
+            end
         end else begin
             fsm_state      <= fsm_state_next;
             cycle_count    <= cycle_count_next;
             act_addr       <= act_addr_next;
             mem_write      <= mem_write_next;
             mem_data_write <= mem_data_write_next;
+            for (int i = 0; i < N; i++) begin
+                data_up[i] <= data_up_next[i];
+            end
+				
         end
     end
 
@@ -60,16 +69,8 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
         act_addr_next       = act_addr;
         mem_write_next      = mem_write;
         mem_data_write_next = mem_data_write;
-
-        // Default outputs
         for (int i = 0; i < N; i++) begin
-            data_up[i] = 0;
-        end
-		  
-        for (int i = 0; i < N; i++) begin
-            for (int j = 0; j < N; j++) begin
-                weight_output[i][j] = 0;
-            end
+            data_up_next[i] = data_up[i];
         end
 
         // Asignar los pesos siempre
@@ -90,11 +91,11 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
                 // Empezar obteniendo los datos de memoria de la primera matriz
                 act_addr_next = addr_A;
                 fsm_state_next = WAITING_MEMORY_A;
-					 matrix_A[(act_addr-addr_A) / N][(act_addr-addr_A) % N] = mem_read;
+					 matrix_A[(act_addr - addr_A) / N][(act_addr-addr_A) % N] = mem_read;
             end
             WAITING_MEMORY_A: begin
                 // Guardar el dato leido de memoria y guardarlo en la matriz A
-                matrix_A[(act_addr-addr_A) / N][(act_addr-addr_A) % N] = mem_read;
+                matrix_A[(act_addr - addr_A) / N][(act_addr - addr_A) % N] = mem_read;
                 if (act_addr < addr_A + N*N - 1)
                     act_addr_next = act_addr + 1;
                 else begin
@@ -112,16 +113,18 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
                     act_addr_next = addr_C;
                     cycle_count_next = 0;       // Se pone el contador de ciclos en 0        
                     fsm_state_next = EXECUTE;   // Se pasa a la ejecucion de los PEs\
-						  data_up[0] = 1;
+						  //data_up[0] = matrix_A[0][0];
                 end
             end
             EXECUTE: begin
-                // Cargar datos de entrada por la parte de arriba de los PEs (A)
-                data_up[0] = 1;
-                data_up[1] = ((cycle_count - 1 < n) && (cycle_count - 1 >= 0)) ? matrix_A[cycle_count - 1][1] : 0;
-                data_up[2] = ((cycle_count - 2 < n) && (cycle_count - 2 >= 0)) ? matrix_A[cycle_count - 2][2] : 0;
-                data_up[3] = ((cycle_count - 3 < n) && (cycle_count - 3 >= 0)) ? matrix_A[cycle_count - 3][3] : 0;
-                
+                // Cargar datos de entrada por la parte de arriba de los PEs (A)	 
+					 for (int i = 0; i < N; i++) begin
+						  if ((cycle_count - i < n) && (cycle_count - i >= 0))
+								data_up_next[i] = matrix_A[cycle_count - i][i];
+						  else
+								data_up_next[i] = 0;
+					 end          
+
                 // Guardar resultados en C cuando salgan los primeros resultados
                 if (cycle_count > 4) begin
                     for (int j = 0; j < N; j++)
@@ -145,7 +148,7 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
                 act_addr_next = addr_C + cycle_count;
                 
                 // Caso de parada
-                if (cycle_count >= N*N - 1) begin
+                if (cycle_count >= N*N) begin
                     fsm_state_next = IDLE;
                     mem_write_next = 0;
                 end else begin

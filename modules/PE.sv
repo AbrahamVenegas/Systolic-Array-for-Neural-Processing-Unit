@@ -14,8 +14,8 @@ module PE #(parameter int WIDTH = 16)
 );
 	logic signed [WIDTH-1:0] calc;
 
-	always_ff @(posedge clk or negedge rst) begin
-		if (!rst) begin
+	always_ff @(posedge clk or posedge rst) begin
+		if (rst) begin
 			calc      <= 0;
 		end else begin
 			calc      <= (in_up * weight) + in_left;

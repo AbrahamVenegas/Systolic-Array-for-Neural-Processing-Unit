@@ -19,8 +19,11 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
     output logic signed [WIDTH - 1:0] weight_output [N - 1:0][N - 1:0],
     output logic signed [WIDTH - 1:0] data_up [N - 1:0],
 	 output logic signed [WIDTH - 1:0] result_col [N - 1:0],
+	 
+	 
 
     // Temporales
+	 output logic [7:0] cycle_count,
     output state_t fsm_state
 );	
 	
@@ -42,7 +45,8 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
         .act_addr(act_addr),
         .weight_output(weight_output),
         .data_up(data_up),
-        .fsm_state(fsm_state)
+        .fsm_state(fsm_state),
+		  .cycle_count(cycle_count)
     );
     logic signed [WIDTH - 1:0] in_left [0:N - 1];
     genvar i;

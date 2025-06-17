@@ -1,3 +1,5 @@
+`timescale 1ns/1ps
+
 module main #(parameter WIDTH = 16) 
 (
 	input  logic clk,
