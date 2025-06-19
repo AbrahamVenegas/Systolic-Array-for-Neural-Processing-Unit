@@ -109,7 +109,7 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
                  if (act_addr < addr_B + N*N - 1)
                     act_addr_next = act_addr + 1;
                 else begin
-                    // Cuando se termina de guardar, se elige ahora la matriz C para la operacion
+                    // Cuando se termina de guardar, se elige ahora la matriz C para el writeback al final
                     act_addr_next = addr_C;
                     cycle_count_next = 0;       // Se pone el contador de ciclos en 0        
                     fsm_state_next = EXECUTE;   // Se pasa a la ejecucion de los PEs\
@@ -151,6 +151,12 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
                 if (cycle_count >= N*N) begin
                     fsm_state_next = IDLE;
                     mem_write_next = 0;
+                    cycle_count_next = 0;
+                    act_addr_next = 0;
+                    mem_data_write_next = 0;
+                    for (int i = 0; i < N; i++) begin
+                        data_up_next[i] = 0;
+                    end
                 end else begin
                     cycle_count_next = cycle_count + 1;
                 end

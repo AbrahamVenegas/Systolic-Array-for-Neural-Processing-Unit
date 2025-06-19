@@ -5,7 +5,7 @@ import SystolicTypes::*;
 module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
     // Inputs
     input logic clk, rst, new_data,
-    input logic signed [WIDTH - 1:0] mem_read,
+    
 	 
     input logic [11:0] addr_A, addr_B, addr_C, 
     input logic [3:0] n,
@@ -15,7 +15,8 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
     output logic signed [WIDTH - 1:0] mem_data_write,
     output logic [11:0] act_addr,
 
-    // Outputs (temporales para ver funcionamiento de PEs y CU)
+    // Outputs (temporales para ver funcionamiento de PEs, CU y mem)
+	 output logic signed [WIDTH - 1:0] mem_read,
     output logic signed [WIDTH - 1:0] weight_output [N - 1:0][N - 1:0],
     output logic signed [WIDTH - 1:0] data_up [N - 1:0],
 	 output logic signed [WIDTH - 1:0] result_col [N - 1:0],
@@ -48,6 +49,7 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
         .fsm_state(fsm_state),
 		  .cycle_count(cycle_count)
     );
+	 
     logic signed [WIDTH - 1:0] in_left [0:N - 1];
     genvar i;
     generate
@@ -67,6 +69,15 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
         .out_right(result_col),
         .out_down(out_down)
     );
+	 
+	 Memory mem_inst (
+		  .address(act_addr),
+        .clock(~clk),
+        .data(mem_data_write),
+        .wren(mem_write),
+        .q(mem_read)
+	 );
+	 
 
 endmodule 
 
