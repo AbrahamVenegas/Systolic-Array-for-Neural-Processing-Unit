@@ -5,6 +5,7 @@ using namespace std;
 
 enum class State {
     IDLE, 
+    ANALYSIS,
     MEMORY,
     WAITING_MEMORY_A,
     WAITING_MEMORY_B,
@@ -41,6 +42,9 @@ class SystolicController {
         // Para interacturar con la memoria
         int mem_write = 0; // Write enable
         int mem_data_write = 0; // Data to write
+
+        // Agregado para matrices n > 4
+        int i, j, k, n_tmp;
 
 
     void update() {
