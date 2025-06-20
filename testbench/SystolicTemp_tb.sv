@@ -12,12 +12,12 @@ module SystolicTemp_tb;
     logic clk, rst, new_data;
     logic signed [WIDTH-1:0] mem_read;
     logic [11:0] addr_A, addr_B, addr_C;
-    logic [3:0] n;
+    logic unsigned [3:0] n;
 	 logic signed [WIDTH-1:0] result_col [N - 1:0];
     logic mem_write;
-	 logic [7:0] cycle_count;
+	 logic unsigned [7:0] cycle_count;
     logic signed [WIDTH-1:0] mem_data_write;
-    logic [11:0] act_addr;
+    logic unsigned [11:0] act_addr;
     logic signed [WIDTH-1:0] weight_output [N - 1:0][N - 1:0];
     logic signed [WIDTH-1:0] data_up [N - 1:0];
     state_t fsm_state;
@@ -64,9 +64,9 @@ module SystolicTemp_tb;
         rst = 1;
         new_data = 0;
         mem_read = 0;
-        addr_A = 12'd16;
-        addr_B = 12'd32;
-        addr_C = 12'd48;
+        addr_A = 12'd0;
+        addr_B = 12'd16;
+        addr_C = 12'd32;
         n = N;
 
         // Inicializa matrices A y B con valores conocidos
@@ -82,19 +82,55 @@ module SystolicTemp_tb;
         new_data = 1;
         #10;
         new_data = 0;
+		  
+		  #1000;
+        for (int i = 0; i <= 50; i++) begin
+            act_addr = i;
+            #2; // Espera breve para simular acceso secuencial
+        end
+
+        $display("Resultados finales en memoria C:");
+        for (int i = 0; i < NN; i++) begin
+            $display("C[%0d]=%0d", i, mem_C[i]);
+        end
+		  
+		  // Segunda operacion
+		  addr_A = 12'd16;
+        addr_B = 12'd32;
+        addr_C = 12'd48;
+		  #10;
+        new_data = 1;
+        #10;
+        new_data = 0;
+		  
+		  #1000;
+        for (int i = 0; i <= 50; i++) begin
+            act_addr = i;
+            #2; // Espera breve para simular acceso secuencial
+        end
+
+        $display("Resultados finales en memoria C:");
+        for (int i = 0; i < NN; i++) begin
+            $display("C[%0d]=%0d", i, mem_C[i]);
+        end
+		  
+		  
+        $finish;
     end
 
     // Simulación de memoria y captura de resultados
     always @(negedge clk) begin
         // Simula lectura de memoria para A
         if (fsm_state == WAITING_MEMORY_A) begin
-            mem_read <= mem_A[act_addr - addr_A];
-            $display("Leyendo A[%0d]=%0d", act_addr - addr_A, mem_A[act_addr - addr_A]);
+            // mem_read <= mem_A[act_addr - addr_A];
+            // $display("Leyendo A[%0d]=%0d", act_addr - addr_A, mem_A[act_addr - addr_A]);
+				$display("1 - Leyendo Mem[%0d]=%0d", act_addr, mem_read);
         end
         // Simula lectura de memoria para B
         else if (fsm_state == WAITING_MEMORY_B) begin
-            mem_read <= mem_B[act_addr - addr_B];
-            $display("Leyendo B[%0d]=%0d", act_addr - addr_B, mem_B[act_addr - addr_B]);
+            // mem_read <= mem_B[act_addr - addr_B];
+            // $display("Leyendo B[%0d]=%0d", act_addr - addr_B, mem_B[act_addr - addr_B]);
+				$display("2 - Leyendo Mem[%0d]=%0d", act_addr, mem_read);
         end
         else if (fsm_state == EXECUTE) begin
             // Captura los resultados de los PEs
@@ -109,14 +145,5 @@ module SystolicTemp_tb;
         end
     end
 
-    // Imprime resultados finales y termina simulación
-    initial begin
-        #1000;
-        $display("Resultados finales en memoria C:");
-        for (int i = 0; i < NN; i++) begin
-            $display("C[%0d]=%0d", i, mem_C[i]);
-        end
-        $finish;
-    end
 
 endmodule
