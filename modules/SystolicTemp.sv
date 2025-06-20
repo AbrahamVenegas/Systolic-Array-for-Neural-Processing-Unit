@@ -19,15 +19,20 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
     output logic signed [WIDTH - 1:0] weight_output [N - 1:0][N - 1:0],
     output logic signed [WIDTH - 1:0] data_up [N - 1:0],
 	 output logic signed [WIDTH - 1:0] result_col [N - 1:0],
-	 
-	 
 
     // Temporales
 	 output logic [7:0] cycle_count,
-    output state_t fsm_state
+    output state_t fsm_state,
+
+    // outputs performance counters
+    output logic [31:0] int_ops,
+    output logic enable_out [4]
 );	
 	
-	 logic signed [WIDTH - 1:0] out_down [N - 1:0];
+	logic signed [WIDTH - 1:0] out_down [N - 1:0];
+    logic enable [N];
+
+    assign enable_out = enable;
 
     // Implementación de la lógica del controlador aquí
     SystolicController #(.N(N), .WIDTH(WIDTH)) controller_inst (
@@ -46,7 +51,8 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
         .weight_output(weight_output),
         .data_up(data_up),
         .fsm_state(fsm_state),
-		  .cycle_count(cycle_count)
+		  .cycle_count(cycle_count),
+          .enable(enable)
     );
     logic signed [WIDTH - 1:0] in_left [0:N - 1];
     genvar i;
@@ -64,8 +70,10 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
         .in_left(in_left),
         .in_up(data_up),
         .weights(weight_output),
+        .enable(enable),
         .out_right(result_col),
-        .out_down(out_down)
+        .out_down(out_down),
+        .int_ops(int_ops)
     );
 
 endmodule 

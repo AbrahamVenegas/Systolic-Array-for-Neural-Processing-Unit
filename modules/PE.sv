@@ -8,21 +8,31 @@ module PE #(parameter int WIDTH = 16)
 	input  logic signed [WIDTH-1:0] weight,     // Peso del PE
 	input  logic signed [WIDTH-1:0] in_left,    // Entrada desde la izquierda
 	input  logic signed [WIDTH-1:0] in_up,      // Entrada desde arriba
+	input  logic enable,
 
 	output logic signed [WIDTH-1:0] out_right,  // Salida hacia el PE de la derecha
-	output logic signed [WIDTH-1:0] out_down   // Salida hacia el PE de abajo
+	output logic signed [WIDTH-1:0] out_down,   // Salida hacia el PE de abajo
+	output logic [31:0] int_op_count, // contador de INT_OPS
+	output logic enable_out // salida de enable (entrada del siguiente PE)
 );
 	logic signed [WIDTH-1:0] calc;
+	logic [31:0] int_op_counter; // registro para contar INT_OPS
 
 	always_ff @(posedge clk or posedge rst) begin
 		if (rst) begin
 			calc      <= 0;
+			int_op_counter <= 0;
 		end else begin
-			calc      <= (in_up * weight) + in_left;
+			if (enable) begin // Solo si realiza el calculo si enable es 1
+                calc           <= (in_up * weight) + in_left;
+                int_op_counter <= int_op_counter + 2;
+            end
 		end
 	end
 
 	assign out_right = calc;
 	assign out_down  = in_up; // Propaga hacia abajo
+	assign int_op_count = int_op_counter; // asignar el contador local al output
+	assign enable_out = enable; 
 
 endmodule

@@ -18,6 +18,7 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
     output logic signed [WIDTH - 1:0] weight_output [N - 1:0][N - 1:0],
     output logic signed [WIDTH - 1:0] data_up [N - 1:0],
 	 output logic [7:0] cycle_count,
+     output logic enable [N],
 
     // Temporales
     output state_t fsm_state
@@ -38,6 +39,7 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
     logic [WIDTH - 1:0] mem_data_write_next;
     logic       mem_write_next;
 	 logic signed [WIDTH - 1:0] data_up_next [N - 1:0];
+     logic enable_next [N];
     // Maquina de estados parte secuencial 
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
@@ -48,6 +50,7 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
             mem_data_write <= 0;
             for (int i = 0; i < N; i++) begin
                 data_up[i] <= 0;
+                enable[i] <= 0;
             end
         end else begin
             fsm_state      <= fsm_state_next;
@@ -57,6 +60,7 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
             mem_data_write <= mem_data_write_next;
             for (int i = 0; i < N; i++) begin
                 data_up[i] <= data_up_next[i];
+                enable[i] <= enable_next[i];
             end
 				
         end
@@ -119,10 +123,14 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
             EXECUTE: begin
                 // Cargar datos de entrada por la parte de arriba de los PEs (A)	 
 					 for (int i = 0; i < N; i++) begin
-						  if ((cycle_count - i < n) && (cycle_count - i >= 0))
-								data_up_next[i] = matrix_A[cycle_count - i][i];
-						  else
-								data_up_next[i] = 0;
+                        if ((cycle_count - i < n) && (cycle_count - i >= 0)) begin
+                            data_up_next[i] = matrix_A[cycle_count - i][i];
+                            enable_next[i] = 1;
+                        end
+                        else begin
+                            data_up_next[i] = 0;
+                            enable_next[i] = 0;
+                        end
 					 end          
 
                 // Guardar resultados en C cuando salgan los primeros resultados

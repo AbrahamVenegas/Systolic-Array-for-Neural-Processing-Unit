@@ -7,12 +7,16 @@ module PEMatrix #(parameter WIDTH = 16)
 	input  logic signed [WIDTH-1:0] in_left [3:0],
 	input  logic signed [WIDTH-1:0] in_up   [3:0],
 	input  logic signed [WIDTH-1:0] weights [3:0][3:0],
+	input  logic enable [4],
 	output logic signed [WIDTH-1:0] out_right [3:0],
-	output logic signed [WIDTH-1:0] out_down  [3:0]
+	output logic signed [WIDTH-1:0] out_down  [3:0],
+	output logic [31:0] int_ops
 );
 
 	logic signed [WIDTH-1:0] link_h [4][5]; // Enlaces horizontales entre PEs
 	logic signed [WIDTH-1:0] link_v [5][4]; // Enlaces verticales entre PEs
+	logic link_enable [5][4]; // enlaces verticales de enable
+	logic [31:0] int_op_counts [3:0][3:0]; // matriz de registros para contar INT_OPS de cada PE
 
 	assign link_h[0][0] = in_left[0];
 	assign link_h[1][0] = in_left[1];
@@ -23,6 +27,11 @@ module PEMatrix #(parameter WIDTH = 16)
 	assign link_v[0][1] = in_up[1];
 	assign link_v[0][2] = in_up[2];
 	assign link_v[0][3] = in_up[3];
+
+	assign link_enable[0][0] = enable[0];
+	assign link_enable[0][1] = enable[1];
+	assign link_enable[0][2] = enable[2];
+	assign link_enable[0][3] = enable[3]; 
 
 	genvar i, j;
 	generate
@@ -35,12 +44,25 @@ module PEMatrix #(parameter WIDTH = 16)
 				   .weight(weights[i][j]),
 					.in_left(link_h[i][j]),
 				   .in_up(link_v[i][j]),
+				   .enable(link_enable[i][j]),
 				   .out_right(link_h[i][j+1]),
-				   .out_down(link_v[i+1][j])
+				   .out_down(link_v[i+1][j]),
+				   .int_op_count(int_op_counts[i][j]),
+				   .enable_out(link_enable[i+1][j])
 				 );
 			end
 		end
 	endgenerate
+
+	// sumar todos los contadores de los PEs
+	logic [31:0] int_op_sum;
+    always_comb begin
+        int_op_sum = 0;
+        for (int i = 0; i < 4; i++)
+            for (int j = 0; j < 4; j++)
+                int_op_sum += int_op_counts[i][j];
+    end
+    assign int_ops = int_op_sum; // asignar la suma al output
 	
 	generate
 		for (i = 0; i < 4; i++) begin : row_relu

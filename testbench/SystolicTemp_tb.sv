@@ -27,6 +27,10 @@ module SystolicTemp_tb;
     logic signed [WIDTH-1:0] mem_B [NN - 1:0];
     logic signed [WIDTH-1:0] mem_C [NN - 1:0];
 
+    // outputs performance counters
+    logic [31:0] int_ops;
+    logic enable [4];
+
     // Instancia del DUT
     SystolicTemp #(.N(N), .WIDTH(WIDTH)) uut (
         .clk(clk),
@@ -44,7 +48,9 @@ module SystolicTemp_tb;
         .data_up(data_up),
         .result_col(result_col),
         .fsm_state(fsm_state),
-		  .cycle_count(cycle_count)
+		  .cycle_count(cycle_count),
+          .int_ops(int_ops),
+          .enable_out(enable)
     );
 
     // Generador de reloj
