@@ -31,6 +31,8 @@ module SystolicTemp_tb;
     // outputs performance counters
     logic [31:0] int_ops;
     logic enable [4];
+    logic [31:0] reads_count;
+    logic [31:0] writes_count;
 
     // Para control, en implementacion ----------
     // state_t fsm_state;
@@ -66,6 +68,8 @@ module SystolicTemp_tb;
 		  .cycle_count(cycle_count),
           .int_ops(int_ops),
           .enable_out(enable),
+          .reads_count(reads_count),
+          .writes_count(writes_count),
 			 
           .stepping_enable(stepping_enable),
         .step(step),

@@ -19,6 +19,8 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
     output logic signed [WIDTH - 1:0] data_up [N - 1:0],
 	 output logic [7:0] cycle_count,
      output logic enable [N],
+    output logic [31:0] reads_count,
+    output logic [31:0] writes_count,
 
     // Para control, en implementacion ----------
     output state_t fsm_state,
@@ -58,6 +60,8 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
     logic       mem_write_next;
 	 logic signed [WIDTH - 1:0] data_up_next [N - 1:0];
      logic enable_next [N];
+     logic [31:0] reads_count_next;
+     logic [31:0] writes_count_next;
      logic done_next;
      logic overflow_next;
      logic [15:0] total_cycles_next;
@@ -72,6 +76,8 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
             done           <= 0;
             total_cycles <= 0;
             overflow_out <= 0;
+            reads_count <= 0;
+            writes_count <= 0;
             for (int i = 0; i < N; i++) begin
                 data_up[i] <= 0;
                 enable[i] <= 0;
@@ -92,6 +98,9 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
             done           <= done_next;
             total_cycles <= total_cycles_next;
             overflow_out <= overflow_next;
+
+            reads_count <= reads_count_next;
+            writes_count <= writes_count_next;
             for (int i = 0; i < N; i++) begin
                 data_up[i] <= data_up_next[i];
                 enable[i] <= enable_next[i];
@@ -111,6 +120,8 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
         fsm_state_next_stepping_next = fsm_state_next_stepping;
         total_cycles_next = total_cycles;
         overflow_next = overflow_in;
+        reads_count_next = reads_count;
+        writes_count_next = writes_count;
         
         for (int i = 0; i < N; i++) begin
             data_up_next[i] = data_up[i];
@@ -155,8 +166,10 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
                 if (stepping_enable) begin
                     fsm_state_next = WAITING_STEP; // Esperando el paso de stepping
                     fsm_state_next_stepping_next = WAITING_MEMORY_A; // Estado al que se va a ir cuando se de el paso
+                    reads_count_next = reads_count_next + 1;
                 end else begin
                     fsm_state_next = WAITING_MEMORY_A; // Estado al que se va a ir cuando se de el paso
+                    reads_count_next = reads_count_next + 1;
                 end
             end
             WAITING_MEMORY_A: begin
@@ -165,10 +178,11 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
                 matrix_A[(act_addr - addr_A) / N][(act_addr - addr_A) % N] = mem_read;
 					 for (int i = 0; i < N; i++) begin
 							data_up_next[i] = 0;
-							enable_next[i] = 1;
 					 end 
-                if (act_addr < addr_A + N*N - 1)
+                if (act_addr < addr_A + N*N - 1) begin
                     act_addr_next = act_addr + 1;
+                    reads_count_next = reads_count_next + 1;
+                end
                 else begin
                     // Cuando se termina de guardar, pasa ahora a la matriz B
                     act_addr_next = addr_B;
@@ -177,16 +191,20 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
                     if (stepping_enable) begin
                         fsm_state_next = WAITING_STEP; // Esperando el paso de stepping
                         fsm_state_next_stepping_next = WAITING_MEMORY_B; // Estado al que se va a ir cuando se de el paso
+                        reads_count_next = reads_count_next + 1;
                     end else begin
                         fsm_state_next = WAITING_MEMORY_B; // Estado al que se va a ir cuando se de el paso
+                        reads_count_next = reads_count_next + 1;
                     end
                 end
             end
             WAITING_MEMORY_B: begin
                 total_cycles_next = total_cycles + 1; // Incrementar el contador de ciclos
                  matrix_B[(act_addr-addr_B) / N][(act_addr-addr_B) % N] = mem_read;
-                 if (act_addr < addr_B + N*N - 1)
+                 if (act_addr < addr_B + N*N - 1) begin
                     act_addr_next = act_addr + 1;
+                    reads_count_next = reads_count_next + 1;
+                 end
                 else begin
                     // Cuando se termina de guardar, se elige ahora la matriz C para el writeback al final
                     act_addr_next = addr_C;
@@ -273,6 +291,7 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
                     end
                 end else begin
                     cycle_count_next = cycle_count + 1;
+                    writes_count_next = writes_count_next + 1;
                 end
             end
             WAITING_STEP: begin

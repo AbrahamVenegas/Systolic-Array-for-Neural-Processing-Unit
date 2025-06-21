@@ -28,6 +28,8 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
     // outputs performance counters
     output logic [31:0] int_ops,
     output logic enable_out [4],
+    output logic [31:0] reads_count,
+    output logic [31:0] writes_count,
 	 
 	 // En implementacion
 	 output state_t fsm_state_next,
@@ -70,6 +72,8 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
         .fsm_state(fsm_state),
 		  .cycle_count(cycle_count),
           .enable(enable),
+          .reads_count(reads_count),
+          .writes_count(writes_count),
 			 
 			// Implementando 
           .fsm_state_next(fsm_state_next),
