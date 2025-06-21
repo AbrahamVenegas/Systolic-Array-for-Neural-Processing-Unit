@@ -1,6 +1,7 @@
 import SystolicTypes::*;
 
 `timescale 1ns/1ps
+`default_nettype none
 
 module SystolicTemp_tb;
 
@@ -11,7 +12,7 @@ module SystolicTemp_tb;
     // Señales
     logic clk, rst, new_data;
     logic signed [WIDTH-1:0] mem_read;
-    logic [11:0] addr_A, addr_B, addr_C;
+    logic unsigned [11:0] addr_A, addr_B, addr_C;
     logic unsigned [3:0] n;
 	 logic signed [WIDTH-1:0] result_col [N - 1:0];
     logic mem_write;
@@ -30,6 +31,20 @@ module SystolicTemp_tb;
     // outputs performance counters
     logic [31:0] int_ops;
     logic enable [4];
+
+    // Para control, en implementacion ----------
+    // state_t fsm_state;
+    state_t fsm_state_next;
+    state_t fsm_state_next_stepping;
+    logic stepping_enable, step;
+	 state_t fsm_state_next_stepping_next;
+	 
+	 logic done; 
+    logic unsigned [15:0] total_cycles; 
+	 
+	 logic overflow_out;
+	 
+	 
 
     // Instancia del DUT
     SystolicTemp #(.N(N), .WIDTH(WIDTH)) uut (
@@ -50,7 +65,16 @@ module SystolicTemp_tb;
         .fsm_state(fsm_state),
 		  .cycle_count(cycle_count),
           .int_ops(int_ops),
-          .enable_out(enable)
+          .enable_out(enable),
+			 
+          .stepping_enable(stepping_enable),
+        .step(step),
+        .fsm_state_next(fsm_state_next),
+        .fsm_state_next_stepping(fsm_state_next_stepping),
+		  .fsm_state_next_stepping_next(fsm_state_next_stepping_next),
+		  .done(done),
+		  .total_cycles(total_cycles),
+		  .overflow_out(overflow_out)
     );
 
     // Generador de reloj
@@ -69,11 +93,8 @@ module SystolicTemp_tb;
         addr_C = 12'd32;
         n = N;
 
-        // Inicializa matrices A y B con valores conocidos
-        for (int i = 0; i < NN; i++) begin
-            mem_A[i] = i + 1;         // Matriz A: 1,2,3,...
-            mem_B[i] = (i + 1) * 2;   // Matriz B: 2,4,6,...
-        end
+        // Probar stepping
+        stepping_enable = 0; // Habilita el modo stepping
 
         // Quita reset y lanza operación
         #12;
@@ -83,10 +104,13 @@ module SystolicTemp_tb;
         #10;
         new_data = 0;
 		  
-		  #1000;
+	    #10;
         for (int i = 0; i <= 50; i++) begin
-            act_addr = i;
-            #2; // Espera breve para simular acceso secuencial
+            //act_addr = i;
+            step = 1; // Simula un paso de reloj
+            #10;
+            step = 0; // Termina el paso de reloj
+            #300; // Espera breve para simular acceso secuencial
         end
 
         $display("Resultados finales en memoria C:");
@@ -104,10 +128,6 @@ module SystolicTemp_tb;
         new_data = 0;
 		  
 		  #1000;
-        for (int i = 0; i <= 50; i++) begin
-            act_addr = i;
-            #2; // Espera breve para simular acceso secuencial
-        end
 
         $display("Resultados finales en memoria C:");
         for (int i = 0; i < NN; i++) begin

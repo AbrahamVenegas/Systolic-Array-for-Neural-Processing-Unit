@@ -27,11 +27,27 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
 
     // outputs performance counters
     output logic [31:0] int_ops,
-    output logic enable_out [4]
-);	
+    output logic enable_out [4],
+	 
+	 // En implementacion
+	 output state_t fsm_state_next,
+    output state_t fsm_state_next_stepping,
+	 output state_t fsm_state_next_stepping_next,
+	 input logic stepping_enable, step,
+	 
+	 output logic done,
+	 output logic [15:0] total_cycles,
+    output logic overflow_out
+
+);		
+
+    
+
 	
 	logic signed [WIDTH - 1:0] out_down [N - 1:0];
     logic enable [N];
+
+    logic overflow; 
 
     assign enable_out = enable;
 
@@ -53,7 +69,19 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
         .data_up(data_up),
         .fsm_state(fsm_state),
 		  .cycle_count(cycle_count),
-          .enable(enable)
+          .enable(enable),
+			 
+			// Implementando 
+          .fsm_state_next(fsm_state_next),
+        .fsm_state_next_stepping(fsm_state_next_stepping),
+        .fsm_state_next_stepping_next(fsm_state_next_stepping_next),
+			.stepping_enable(stepping_enable),
+			.step(step),
+			.done(done),
+			.total_cycles(total_cycles),
+            .overflow_in(overflow),
+            .overflow_out(overflow_out)
+	
     );
 	 
     logic signed [WIDTH - 1:0] in_left [0:N - 1];
@@ -75,7 +103,8 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
         .enable(enable),
         .out_right(result_col),
         .out_down(out_down),
-        .int_ops(int_ops)
+        .int_ops(int_ops),
+        .overflow(overflow)
     );
 	 
 	 Memory mem_inst (
