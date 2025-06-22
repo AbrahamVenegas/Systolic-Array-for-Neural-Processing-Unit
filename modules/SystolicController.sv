@@ -163,10 +163,10 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
                 // Guardar el dato leido de memoria y guardarlo en la matriz A
                 total_cycles_next = total_cycles + 1; // Incrementar el contador de ciclos
                 matrix_A[(act_addr - addr_A) / N][(act_addr - addr_A) % N] = mem_read;
-					 for (int i = 0; i < N; i++) begin
-							data_up_next[i] = 0;
-							enable_next[i] = 1;
-					 end 
+//					 for (int i = 0; i < N; i++) begin
+//							data_up_next[i] = 0;
+//							enable_next[i] = 1;
+//					 end 
                 if (act_addr < addr_A + N*N - 1)
                     act_addr_next = act_addr + 1;
                 else begin
@@ -221,13 +221,14 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
                 if (cycle_count > 4) begin
                     for (int j = 0; j < N; j++)
                         matrix_C[(cycle_count - 1) % N][j] = result_col[j];
+
+                    // Para marcar el overflow
+                    if (overflow_in && overflow_out == 0) 
+                        overflow_next = 1; // Si hay overflow, se marca
+                    
                 end
 
-                if (overflow_in) begin
-                    overflow_next = 1; // Si hay overflow, se marca
-                end else begin
-                    overflow_next = overflow_next; 
-                end
+                
 
                 // Se termina el execute cuando se lleva a la cantidad de ciclos
                 if (cycle_count == n*2) begin

@@ -134,6 +134,10 @@ module SystolicTemp_tb;
             $display("C[%0d]=%0d", i, mem_C[i]);
         end
 		  
+		  #10;
+        new_data = 1;
+		  #1000;
+		  
 		  
         $finish;
     end
