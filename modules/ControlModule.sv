@@ -1,25 +1,17 @@
 import SystolicTypes::*;
 
-
-
 module ControlModule #(parameter WIDTH = 16) (
-    // input logic clk, ??
     // Inputs --------------------------------
-    input logic start, //reset, // write_mem, read_mem, ?
-    // input logic unsigned [WIDTH - 1:0] mem_data_write, // Datos a escribir en memoria ?
-    // input logic unsigned [11:0] addr_ctrl, // Dirección de memoria a escribir ?
+    input logic start, //reset, // write_mem, read_mem
    
     input logic unsigned [11:0] addr_A, addr_B, addr_C, 
     input logic unsigned [8:0] matrix_N, // Verificar el tamaño máximo de n
     // input logic ReLU_enable, stepping_enable, step,
 
     // Para obtener estados del controlador
-    // input logic mem_write_controller,
-    // input logic unsigned [15:0] cycle_count_controller,
     input state_t fsm_state_controller_stepping,
     input state_t fsm_state_controller,
     input logic stepping_enable, // Para el modo stepping
-    // input logic unsigned [31:0] int_ops_in,
     input logic op_done,
     input logic overflow,
 
@@ -28,29 +20,11 @@ module ControlModule #(parameter WIDTH = 16) (
     output memory_status_t memory_status,
     // output state_t fsm_state,
     output error_code_t error_code,
-    // output logic unsigned [15:0] cycle_count,
-    // output logic unsigned [WIDTH - 1:0] mem_data_read, // Datos leidos de memoria
-
-    // Outputs para intensidad aritmética
-    // output logic unsigned [31:0] int_ops,
-    // faltaria uno como este: output logic [31:0] mem_ops
-
-    // Para controlar el arreglo sistólico
-    output logic new_data_out //rst_out,
-    // output logic unsigned [11:0] addr_A_out, addr_B_out, addr_C_out,
-    // output logic unsigned [8:0] matrix_N_out // Verificar el tamaño máximo de n
+    output logic new_data_out 
 );
 
     // Assignaciones
     assign new_data_out = start && (error_code == NO_ERROR || error_code == OVERFLOW);
-    // assign rst_out = reset;
-    // assign addr_A_out = addr_A;
-    // assign addr_B_out = addr_B;
-    // assign addr_C_out = addr_C;
-    // assign matrix_N_out = matrix_N;
-    // assign fsm_state = fsm_state_controller;
-    // assign int_ops = int_ops_in;
-    // assign cycle_count = cycle_count_controller;
     logic fsm_state_analyze;
     assign fsm_state_analyze = (stepping_enable) ? fsm_state_controller_stepping : fsm_state_controller;
     assign system_status = (fsm_state_analyze != IDLE) ? BUSY :       
@@ -65,7 +39,5 @@ module ControlModule #(parameter WIDTH = 16) (
                      (addr_A + (matrix_N * matrix_N)  >= 4096 || addr_B + (matrix_N * matrix_N) >= 4096 || addr_C + (matrix_N * matrix_N) >= 4096) ? OUT_OF_BOUNDS :
                      (overflow) ? OVERFLOW : // Implementar bit overflow
                      NO_ERROR;
-
-
 
 endmodule 

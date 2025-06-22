@@ -11,81 +11,63 @@ module SystolicTemp_tb;
 
     // Señales
     logic clk, rst, new_data;
-    logic signed [WIDTH-1:0] mem_read;
     logic unsigned [11:0] addr_A, addr_B, addr_C;
     logic unsigned [8:0] n;
-	 logic signed [WIDTH-1:0] result_col [N - 1:0];
-    logic mem_write;
-	 logic unsigned [7:0] cycle_count;
-    logic signed [WIDTH-1:0] mem_data_write;
     logic unsigned [11:0] act_addr;
-    logic signed [WIDTH-1:0] weight_output [N - 1:0][N - 1:0];
-    logic signed [WIDTH-1:0] data_up [N - 1:0];
-    state_t fsm_state;
-
-    // Memorias de prueba
-    logic signed [WIDTH-1:0] mem_A [NN - 1:0];
-    logic signed [WIDTH-1:0] mem_B [NN - 1:0];
-    logic signed [WIDTH-1:0] mem_C [NN - 1:0];
-
-    // outputs performance counters
+    logic signed [WIDTH-1:0] matrix_C [N-1:0][N-1:0];
     logic [31:0] int_ops;
-    logic enable [4];
-
-    // Para control, en implementacion ----------
-    // state_t fsm_state;
-    state_t fsm_state_next;
-    state_t fsm_state_next_stepping;
+    logic [31:0] reads_count;
+    logic [31:0] writes_count;
+    logic unsigned [15:0] total_cycles;
     logic stepping_enable, step;
-	 state_t fsm_state_next_stepping_next;
-	 
-	 logic done; 
-    logic unsigned [15:0] total_cycles; 
-	 
-	 logic overflow_out;
-	 
-	 logic ReLU_activation;
+    logic ReLU_activation;
+    logic signed [WIDTH-1:0] mem_read;
 
+    // Estados y status
+    state_t fsm_state, fsm_state_next_stepping;
     system_status_t system_status;
     memory_status_t memory_status;
     error_code_t error_code;
-	 
-	 
-//
-//    // Instancia del DUT
-//    SystolicTemp #(.N(N), .WIDTH(WIDTH)) uut (
-//        .clk(clk),
-//        .rst(rst),
-//        .new_data(new_data),
-//        .mem_read(mem_read),
-//        .addr_A(addr_A),
-//        .addr_B(addr_B),
-//        .addr_C(addr_C),
-//        .n(n),
-//        .mem_write(mem_write),
-//        .mem_data_write(mem_data_write),
-//        .act_addr(act_addr),
-//        .weight_output(weight_output),
-//        .data_up(data_up),
-//        .result_col(result_col),
-//        .fsm_state(fsm_state),
-//		  .cycle_count(cycle_count),
-//          .int_ops(int_ops),
-//          .enable_out(enable),
-//			 
-//          .stepping_enable(stepping_enable),
-//        .step(step),
-//        .fsm_state_next(fsm_state_next),
-//        .fsm_state_next_stepping(fsm_state_next_stepping),
-//		  .fsm_state_next_stepping_next(fsm_state_next_stepping_next),
-//		  .done(done),
-//		  .total_cycles(total_cycles),
-//		  .overflow_out(overflow_out),
-//		  .ReLU_activation(ReLU_activation),
-//        .system_status(system_status),
-//        .memory_status(memory_status),
-//        .error_code(error_code)
-//    );
+
+    // Memorias de prueba
+    logic signed [WIDTH-1:0] mem_A [NN-1:0];
+    logic signed [WIDTH-1:0] mem_B [NN-1:0];
+    logic signed [WIDTH-1:0] mem_C [NN-1:0];
+
+    // Para el testbench
+    logic signed [WIDTH-1:0] expected_C_relu0 [NN-1:0]; // Resultados esperados sin ReLU
+    logic signed [WIDTH-1:0] expected_C_relu1 [NN-1:0]; // Resultados esperados con ReLU
+
+    // Buffers para capturar los valores leídos por el DUT
+    logic signed [WIDTH-1:0] captured_A [NN-1:0];
+    logic signed [WIDTH-1:0] captured_B [NN-1:0];
+    int captured_A_count, captured_B_count;
+
+    // Instancia del DUT
+    SystolicTemp #(.N(N), .WIDTH(WIDTH)) uut (
+        .clk(clk),
+        .rst(rst),
+        .new_data(new_data),
+        .mem_read(mem_read),
+        .addr_A(addr_A),
+        .addr_B(addr_B),
+        .addr_C(addr_C),
+        .n(n),
+        .act_addr(act_addr),
+        .matrix_C(matrix_C),
+        .int_ops(int_ops),
+        .reads_count(reads_count),
+        .writes_count(writes_count),
+        .total_cycles(total_cycles),
+        .stepping_enable(stepping_enable),
+        .step(step),
+        .fsm_state(fsm_state),
+        .fsm_state_next_stepping(fsm_state_next_stepping),
+        .ReLU_activation(ReLU_activation),
+        .system_status(system_status),
+        .memory_status(memory_status),
+        .error_code(error_code)
+    );
 
     // Generador de reloj
     initial begin
@@ -93,92 +75,149 @@ module SystolicTemp_tb;
         forever #5 clk = ~clk;
     end
 
-    // Inicialización y estímulos
+    // Inicialización de memoria 
     initial begin
-        rst = 1;
-        new_data = 0;
-        mem_read = 0;
-        addr_A = 12'd0;
-        addr_B = 12'd16;
-        addr_C = 12'd32;
-        n = N;
-		  ReLU_activation = 1;
-
-        // Probar stepping
-        stepping_enable = 0; // Habilita el modo stepping
-
-        // Quita reset y lanza operación
-        #10;
-        rst = 0;
-        #10;
-        new_data = 1;
-        #10;
-        new_data = 0;
-		  
-	    #10;
-        for (int i = 0; i <= 50; i++) begin
-            //act_addr = i;
-            step = 1; // Simula un paso de reloj
-            #10;
-            step = 0; // Termina el paso de reloj
-            #300; // Espera breve para simular acceso secuencial
-        end
-
-        $display("Resultados finales en memoria C:");
-        for (int i = 0; i < NN; i++) begin
-            $display("C[%0d]=%0d", i, mem_C[i]);
-        end
-		  
-		  // Segunda operacion
-		  addr_A = 12'd16;
-        addr_B = 12'd32;
-        addr_C = 12'd48;
-		  #10;
-        new_data = 1;
-        #10;
-        new_data = 0;
-		  
-		  #1000;
-
-        $display("Resultados finales en memoria C:");
-        for (int i = 0; i < NN; i++) begin
-            $display("C[%0d]=%0d", i, mem_C[i]);
-        end
-		  
-		  #10;
-        new_data = 1;
-		  #1000;
-		  
-		  
-        $finish;
+        // Matriz A: posiciones 0-15
+        for (int i = 0; i < NN; i++) mem_A[i] = 0;
+        // Matriz B: posiciones 16-31
+        for (int i = 0; i < NN; i++) mem_B[i] = 0;
+        // Inicializa C en cero
+        for (int i = 0; i < NN; i++) mem_C[i] = 0;
     end
 
-    // Simulación de memoria y captura de resultados
-    always @(negedge clk) begin
-        // Simula lectura de memoria para A
-        if (fsm_state == WAITING_MEMORY_A) begin
-            // mem_read <= mem_A[act_addr - addr_A];
-            // $display("Leyendo A[%0d]=%0d", act_addr - addr_A, mem_A[act_addr - addr_A]);
-				$display("1 - Leyendo Mem[%0d]=%0d", act_addr, mem_read);
+    // Captura los resultados escritos en memoria C
+    always @(posedge clk) begin
+        if (fsm_state == WRITEBACK) begin
+            mem_C[act_addr - addr_C] <= mem_read;
         end
-        // Simula lectura de memoria para B
-        else if (fsm_state == WAITING_MEMORY_B) begin
-            // mem_read <= mem_B[act_addr - addr_B];
-            // $display("Leyendo B[%0d]=%0d", act_addr - addr_B, mem_B[act_addr - addr_B]);
-				$display("2 - Leyendo Mem[%0d]=%0d", act_addr, mem_read);
-        end
-        else if (fsm_state == EXECUTE) begin
-            // Captura los resultados de los PEs
-            for (int i = 0; i < N; i++) begin
-                $display("PE[%0d] resultado: %0d", i, result_col[i]);
+    end
+
+    // Captura los valores leídos por el DUT para A y B
+    always @(posedge clk) begin
+        if (rst) begin
+            captured_A_count <= 0;
+            captured_B_count <= 0;
+            for (int i = 0; i < NN; i++) begin
+                captured_A[i] <= 0;
+                captured_B[i] <= 0;
+            end
+        end else begin
+            // Captura para matriz A solo en WAITING_MEMORY_A
+            if (fsm_state == WAITING_MEMORY_A && act_addr >= addr_A && act_addr < addr_A + NN && captured_A_count < NN) begin
+                captured_A[act_addr - addr_A] <= mem_read;
+                captured_A_count <= captured_A_count + 1;
+            end
+            // Captura para matriz B solo en WAITING_MEMORY_B
+            if (fsm_state == WAITING_MEMORY_B && act_addr >= addr_B && act_addr < addr_B + NN && captured_B_count < NN) begin
+                captured_B[act_addr - addr_B] <= mem_read;
+                captured_B_count <= captured_B_count + 1;
             end
         end
-        // Captura los resultados escritos en memoria C
-        else if (fsm_state == WRITEBACK) begin
-            mem_C[act_addr - addr_C] <= mem_data_write;
-            $display("WRITEBACK: C[%0d]=%0d", act_addr - addr_C, mem_data_write);
-        end
     end
 
+     // Calcula el resultado esperado usando los valores capturados
+    task calc_expected_no_relu;
+        begin
+            for (int i = 0; i < N; i++) begin
+                for (int j = 0; j < N; j++) begin
+                    expected_C_relu0[i*N + j] = 0;
+                    for (int k = 0; k < N; k++) begin
+                        expected_C_relu0[i*N + j] += captured_A[i*N + k] * captured_B[k*N + j];
+                    end
+                end
+            end
+        end
+    endtask
+
+    task calc_expected_with_relu;
+        begin
+            for (int i = 0; i < N; i++) begin
+                for (int j = 0; j < N; j++) begin
+                    expected_C_relu1[i*N + j] = 0;
+                    for (int k = 0; k < N; k++) begin
+                        expected_C_relu1[i*N + j] += captured_A[i*N + k] * captured_B[k*N + j];
+                    end
+                    // Aplica ReLU
+                    if (expected_C_relu1[i*N + j] < 0)
+                        expected_C_relu1[i*N + j] = 0;
+                end
+            end
+        end
+    endtask
+
+    // Prueba 1: Multiplicación sin ReLU
+    task test_no_relu;
+        begin
+            // Reset y setup
+            rst = 1; new_data = 0; ReLU_activation = 0; stepping_enable = 0; step = 0;
+            addr_A = 12'd0; addr_B = 12'd16; addr_C = 12'd32; n = N;
+            #20; rst = 0; #10;
+            new_data = 1; #10; new_data = 0;
+
+            // Espera a que termine la operación (puedes ajustar el tiempo)
+            wait (system_status == DONE_AND_WAITING);
+            #20;
+
+            // Calcula el resultado esperado usando los valores capturados
+            calc_expected_no_relu();
+
+            // Compara resultados
+            $display("==== TEST 1: Multiplication without ReLU ====");
+            for (int i = 0; i < NN; i++) begin
+                if (mem_C[i] !== expected_C_relu0[i])
+                    $error("ERROR: C[%0d]=%0d, expected=%0d", i, mem_C[i], expected_C_relu0[i]);
+                else
+                    $display("OK: C[%0d]=%0d, expected=%0d", i, mem_C[i], expected_C_relu0[i]);
+            end
+        end
+    endtask
+
+    // Prueba 2: Multiplicación con ReLU
+    task test_with_relu;
+        begin
+            // Reset y setup
+            rst = 1; new_data = 0; ReLU_activation = 1; stepping_enable = 0; step = 0;
+            addr_A = 12'd0; addr_B = 12'd16; addr_C = 12'd32; n = N;
+            // Limpia memoria C
+            for (int i = 0; i < NN; i++) mem_C[i] = 0;
+            #20; rst = 0; #10;
+            new_data = 1; #10; new_data = 0;
+
+            // Espera a que termine la operación
+            wait (system_status == DONE_AND_WAITING);
+            #20;
+
+            // Calcula el resultado esperado usando los valores capturados
+            calc_expected_with_relu();
+
+            // Compara resultados
+            $display("==== TEST 2: Multiplication with ReLU ====");
+            for (int i = 0; i < NN; i++) begin
+                if (mem_C[i] !== expected_C_relu1[i])
+                    $error("ERROR: C[%0d]=%0d, expected=%0d", i, mem_C[i], expected_C_relu1[i]);
+                else
+                    $display("OK: C[%0d]=%0d, expected=%0d", i, mem_C[i], expected_C_relu1[i]);
+            end
+        end
+    endtask
+
+    // Secuencia de pruebas
+    initial begin
+        test_no_relu();
+        test_with_relu();
+
+        $display("==== PERFORMANCE COUNTERS ====");
+        $display("total int operations = %0d", int_ops);
+        $display("total memory reads   = %0d", reads_count);
+        $display("total memory writes  = %0d", writes_count);
+
+        if ((reads_count + writes_count) != 0)
+            $display("Aritmetic Intensity = %f", real'(int_ops) / real'(reads_count * 2 + writes_count * 2));
+        else
+            $display("Aritmetic Intensity = undefined (division by zero)");
+
+        $display("==== TESTBENCH FINISHED ====");
+        $finish;
+    end
 
 endmodule

@@ -17,6 +17,8 @@ module Memory_tb;
     logic wren;
     logic [DATA_W-1:0] q;
 
+    int errors = 0; // Contador de errores
+
     // Instancia de la memoria
     Memory dut (
         .address(address),
@@ -48,7 +50,7 @@ module Memory_tb;
             wren = 1;
             address = i;
             data = i * 11 + 3;
-            $display("Escribiendo: addr=%0d, data=%0d", address, data);
+            $display("Writing: addr=%0d, data=%0d", address, data);
         end
 
         // Desactiva escritura
@@ -56,16 +58,26 @@ module Memory_tb;
         wren = 0;
         data = 'x;
 
-        // Lee las posiciones escritas
+        // Lee las posiciones escritas y verifica con assert
         for (int i = 0; i < 8; i++) begin
             @(negedge clock);
             address = i;
             @(posedge clock); // Espera a que q se actualice
             #1;
-            $display("Leyendo: addr=%0d, q=%0d", address, q);
+            if (q !== (i * 11 + 3)) begin
+                $error("ERROR: addr=%0d, expected=%0d, readed=%0d", address, (i * 11 + 3), q);
+                errors++;
+            end else begin
+                $display("OK: addr=%0d, expected=%0d", address, q);
+            end
         end
 
         #20;
+        if (errors == 0) begin
+            $display("TEST APPROVED: all readed values are correct.");
+        end else begin
+            $display("TEST FAILED: %0d errors founded.", errors);
+        end
         $finish;
     end
 
