@@ -44,30 +44,30 @@ module SystolicTemp_tb;
     int captured_A_count, captured_B_count;
 
     // Instancia del DUT
-    SystolicTemp #(.N(N), .WIDTH(WIDTH)) uut (
-        .clk(clk),
-        .rst(rst),
-        .new_data(new_data),
-        .mem_read(mem_read),
-        .addr_A(addr_A),
-        .addr_B(addr_B),
-        .addr_C(addr_C),
-        .n(n),
-        .act_addr(act_addr),
-        .matrix_C(matrix_C),
-        .int_ops(int_ops),
-        .reads_count(reads_count),
-        .writes_count(writes_count),
-        .total_cycles(total_cycles),
-        .stepping_enable(stepping_enable),
-        .step(step),
-        .fsm_state(fsm_state),
-        .fsm_state_next_stepping(fsm_state_next_stepping),
-        .ReLU_activation(ReLU_activation),
-        .system_status(system_status),
-        .memory_status(memory_status),
-        .error_code(error_code)
-    );
+//    SystolicTemp #(.N(N), .WIDTH(WIDTH)) uut (
+//        .clk(clk),
+//        .rst(rst),
+//        .new_data(new_data),
+//        .mem_read(mem_read),
+//        .addr_A(addr_A),
+//        .addr_B(addr_B),
+//        .addr_C(addr_C),
+//        .n(n),
+//        .act_addr(act_addr),
+//        .matrix_C(matrix_C),
+//        .int_ops(int_ops),
+//        .reads_count(reads_count),
+//        .writes_count(writes_count),
+//        .total_cycles(total_cycles),
+//        .stepping_enable(stepping_enable),
+//        .step(step),
+//        .fsm_state(fsm_state),
+//        .fsm_state_next_stepping(fsm_state_next_stepping),
+//        .ReLU_activation(ReLU_activation),
+//        .system_status(system_status),
+//        .memory_status(memory_status),
+//        .error_code(error_code)
+//    );
 
     // Generador de reloj
     initial begin

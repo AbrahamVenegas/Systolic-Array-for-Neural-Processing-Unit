@@ -240,7 +240,7 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
                 
 
                 // Se termina el execute cuando se lleva a la cantidad de ciclos
-                if (cycle_count == n*2) begin
+                if (cycle_count == n*2 + 1) begin
                     //fsm_state_next = WRITEBACK;
                     mem_write_next = 1;         // Para escribir en memoria en el siguiente 
                     cycle_count_next = 0;

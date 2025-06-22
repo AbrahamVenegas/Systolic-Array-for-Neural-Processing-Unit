@@ -18,11 +18,29 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
     output state_t fsm_state_next_stepping,
     output logic unsigned [15:0] total_cycles,
     output logic unsigned [31:0] int_ops,
-    output logic [31:0] reads_count,
-    output logic [31:0] writes_count,
     output logic signed [WIDTH - 1:0] matrix_C [N - 1:0][N - 1:0],
     output logic unsigned [11:0] act_addr,
-    output logic signed [WIDTH - 1:0] mem_read
+    output logic signed [WIDTH - 1:0] mem_read,
+
+    // Para controlar memoria desde FPGA
+    input logic unsigned [11:0] act_addr_FPGA,
+    input logic switch_mem_access
+
+
+    // Temporales
+    // output logic mem_write,
+    // output logic signed [WIDTH - 1:0] mem_data_write,
+    // output logic [11:0] act_addr,
+	// output logic signed [WIDTH - 1:0] mem_read,
+    // output logic signed [WIDTH - 1:0] weight_output [N - 1:0][N - 1:0],
+    // output logic signed [WIDTH - 1:0] data_up [N - 1:0],
+	// output logic signed [WIDTH - 1:0] result_col [N - 1:0],
+	// output logic [7:0] cycle_count,
+    // output logic enable_out [4],
+	// output state_t fsm_state_next,
+    // output state_t fsm_state_next_stepping_next,
+	// output logic done,
+	// output logic overflow_out
 );		
 
     // Registros y señales internas
@@ -33,6 +51,8 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
 
     logic mem_write;
     logic signed [WIDTH - 1:0] mem_data_write;
+    // logic [11:0] act_addr;
+	// logic signed [WIDTH - 1:0] mem_read;
     logic signed [WIDTH - 1:0] weight_output [N - 1:0][N - 1:0];
     logic signed [WIDTH - 1:0] data_up [N - 1:0];
 	logic signed [WIDTH - 1:0] result_col [N - 1:0];
@@ -43,6 +63,8 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
 	logic done;
 	logic overflow_out;
     
+
+
     assign enable_out = enable;
 
     // Implementación de la lógica del controlador aquí
@@ -62,22 +84,21 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
         .weight_output(weight_output),
         .data_up(data_up),
         .fsm_state(fsm_state),
-        .cycle_count(cycle_count),
-        .enable(enable),
-        .reads_count(reads_count),
-        .writes_count(writes_count),
+		  .cycle_count(cycle_count),
+          .enable(enable),
 			 
-        // Implementando 
-        .fsm_state_next(fsm_state_next),
+			// Implementando 
+          .fsm_state_next(fsm_state_next),
         .fsm_state_next_stepping(fsm_state_next_stepping),
         .fsm_state_next_stepping_next(fsm_state_next_stepping_next),
-        .stepping_enable(stepping_enable),
-        .step(step),
-        .done(done),
-        .total_cycles(total_cycles),
-        .overflow_in(overflow),
-        .overflow_out(overflow_out),
-        .matrix_C(matrix_C)
+			.stepping_enable(stepping_enable),
+			.step(step),
+			.done(done),
+			.total_cycles(total_cycles),
+            .overflow_in(overflow),
+            .overflow_out(overflow_out),
+            .matrix_C(matrix_C)
+	
     );
 
     
@@ -95,9 +116,9 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
         .memory_status(memory_status),
         .error_code(error_code),
         .new_data_out(new_data_controller),
-        .addr_A(addr_A),
-        .addr_B(addr_B),
-        .addr_C(addr_C)
+		  .addr_A(addr_A),
+		  .addr_B(addr_B),
+		  .addr_C(addr_C)
 
     );
 	 
@@ -122,11 +143,15 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
         .out_down(out_down),
         .int_ops(int_ops),
         .overflow(overflow),
-        .ReLU_activation(ReLU_activation)
+		  .ReLU_activation(ReLU_activation)
     );
+
+    // Elegir entre la dirección de memoria manual o la dirección del controlador
+    logic unsigned [11:0] addr_ctrl;
+    assign addr_ctrl = (switch_mem_access) ? act_addr_FPGA : act_addr;
 	 
 	 Memory mem_inst (
-        .address(act_addr),
+		  .address(addr_ctrl),
         .clock(~clk),
         .data(mem_data_write),
         .wren(mem_write),
