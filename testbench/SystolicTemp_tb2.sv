@@ -18,6 +18,8 @@ module SystolicTemp_tb2;
     logic unsigned [11:0] act_addr;
     logic signed [WIDTH-1:0] matrix_C [N-1:0][N-1:0];
     logic [31:0] int_ops;
+    logic [31:0] reads_count;
+    logic [31:0] writes_count;
     logic unsigned [15:0] total_cycles;
     //logic overflow_out;
     logic stepping_enable, step;
@@ -53,6 +55,8 @@ module SystolicTemp_tb2;
         .act_addr(act_addr),
         .matrix_C(matrix_C),
         .int_ops(int_ops),
+        .reads_count(reads_count),
+        .writes_count(writes_count),
         .total_cycles(total_cycles),
         //.overflow_out(overflow_out),
         .stepping_enable(stepping_enable),

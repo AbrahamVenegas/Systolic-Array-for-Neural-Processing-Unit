@@ -18,6 +18,8 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
     output state_t fsm_state_next_stepping,
     output logic unsigned [15:0] total_cycles,
     output logic unsigned [31:0] int_ops,
+    output logic [31:0] reads_count,
+    output logic [31:0] writes_count,
     output logic signed [WIDTH - 1:0] matrix_C [N - 1:0][N - 1:0],
     output logic unsigned [11:0] act_addr,
     output logic signed [WIDTH - 1:0] mem_read
@@ -82,6 +84,8 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
         .fsm_state(fsm_state),
 		  .cycle_count(cycle_count),
           .enable(enable),
+          .reads_count(reads_count),
+          .writes_count(writes_count),
 			 
 			// Implementando 
           .fsm_state_next(fsm_state_next),
