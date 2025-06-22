@@ -5,49 +5,61 @@ import SystolicTypes::*;
 module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
     // Inputs
     input logic clk, rst, new_data,
-    
-	 
-    input logic [11:0] addr_A, addr_B, addr_C, 
-    input logic [3:0] n,
+    input logic stepping_enable, step,
+	input logic ReLU_activation,
+    input logic unsigned [11:0] addr_A, addr_B, addr_C, 
+    input logic unsigned [8:0] n,
 
-    // Outputs (temporales para memoria)
-    output logic mem_write,
-    output logic signed [WIDTH - 1:0] mem_data_write,
-    output logic [11:0] act_addr,
+    // Control / Debug / Status
+    output system_status_t system_status,
+    output memory_status_t memory_status,
+    output error_code_t error_code,
+    output state_t fsm_state,
+    output state_t fsm_state_next_stepping,
+    output logic unsigned [15:0] total_cycles,
+    output logic unsigned [31:0] int_ops,
+    output logic signed [WIDTH - 1:0] matrix_C [N - 1:0][N - 1:0],
+    output logic unsigned [11:0] act_addr,
+    output logic signed [WIDTH - 1:0] mem_read
 
-    // Outputs (temporales para ver funcionamiento de PEs, CU y mem)
-	 output logic signed [WIDTH - 1:0] mem_read,
-    output logic signed [WIDTH - 1:0] weight_output [N - 1:0][N - 1:0],
-    output logic signed [WIDTH - 1:0] data_up [N - 1:0],
-	 output logic signed [WIDTH - 1:0] result_col [N - 1:0],
 
     // Temporales
-	 output logic [7:0] cycle_count,
-    output state_t fsm_state,
-
-    // outputs performance counters
-    output logic [31:0] int_ops,
-    output logic enable_out [4],
-	 
-	 // En implementacion
-	 output state_t fsm_state_next,
-    output state_t fsm_state_next_stepping,
-	 output state_t fsm_state_next_stepping_next,
-	 input logic stepping_enable, step,
-	 
-	 output logic done,
-	 output logic [15:0] total_cycles,
-    output logic overflow_out
-
+    // output logic mem_write,
+    // output logic signed [WIDTH - 1:0] mem_data_write,
+    // output logic [11:0] act_addr,
+	// output logic signed [WIDTH - 1:0] mem_read,
+    // output logic signed [WIDTH - 1:0] weight_output [N - 1:0][N - 1:0],
+    // output logic signed [WIDTH - 1:0] data_up [N - 1:0],
+	// output logic signed [WIDTH - 1:0] result_col [N - 1:0],
+	// output logic [7:0] cycle_count,
+    // output logic enable_out [4],
+	// output state_t fsm_state_next,
+    // output state_t fsm_state_next_stepping_next,
+	// output logic done,
+	// output logic overflow_out
 );		
 
-    
-
-	
+    // Registros y señales internas
 	logic signed [WIDTH - 1:0] out_down [N - 1:0];
     logic enable [N];
-
     logic overflow; 
+    logic new_data_controller;
+
+    logic mem_write;
+    logic signed [WIDTH - 1:0] mem_data_write;
+    // logic [11:0] act_addr;
+	// logic signed [WIDTH - 1:0] mem_read;
+    logic signed [WIDTH - 1:0] weight_output [N - 1:0][N - 1:0];
+    logic signed [WIDTH - 1:0] data_up [N - 1:0];
+	logic signed [WIDTH - 1:0] result_col [N - 1:0];
+	logic [7:0] cycle_count;
+    logic enable_out [4];
+	state_t fsm_state_next;
+    state_t fsm_state_next_stepping_next;
+	logic done;
+	logic overflow_out;
+    
+
 
     assign enable_out = enable;
 
@@ -55,7 +67,7 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
     SystolicController #(.N(N), .WIDTH(WIDTH)) controller_inst (
         .clk(clk),
         .rst(rst),
-        .new_data(new_data),
+        .new_data(new_data_controller),
         .mem_read(mem_read),
         .result_col(result_col),
         .addr_A(addr_A),
@@ -80,8 +92,30 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
 			.done(done),
 			.total_cycles(total_cycles),
             .overflow_in(overflow),
-            .overflow_out(overflow_out)
+            .overflow_out(overflow_out),
+            .matrix_C(matrix_C)
 	
+    );
+
+    
+    
+
+    ControlModule #(.WIDTH(WIDTH)) control_module_inst (
+        .start(new_data),
+        .matrix_N(n),
+        .fsm_state_controller(fsm_state),
+        .fsm_state_controller_stepping(fsm_state_next_stepping),
+        .stepping_enable(stepping_enable),
+        .op_done(done),
+        .overflow(overflow_out),
+        .system_status(system_status),
+        .memory_status(memory_status),
+        .error_code(error_code),
+        .new_data_out(new_data_controller),
+		  .addr_A(addr_A),
+		  .addr_B(addr_B),
+		  .addr_C(addr_C)
+
     );
 	 
     logic signed [WIDTH - 1:0] in_left [0:N - 1];
@@ -104,7 +138,8 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
         .out_right(result_col),
         .out_down(out_down),
         .int_ops(int_ops),
-        .overflow(overflow)
+        .overflow(overflow),
+		  .ReLU_activation(ReLU_activation)
     );
 	 
 	 Memory mem_inst (

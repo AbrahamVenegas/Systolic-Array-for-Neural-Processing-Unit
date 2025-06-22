@@ -9,7 +9,7 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
     input logic signed [WIDTH - 1:0] mem_read,
 	input logic signed [WIDTH - 1:0] result_col [N - 1:0],
     input logic [11:0] addr_A, addr_B, addr_C, 
-    input logic [3:0] n,
+    input logic [8:0] n,
 
     // Outputs
     output logic mem_write,
@@ -38,7 +38,12 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
 
     // Overflow detectado
     input logic overflow_in, // Overflow detectado por los PEs
-    output logic overflow_out
+    output logic overflow_out,
+
+    // Para ver el resultado final
+    output logic signed [WIDTH - 1:0] matrix_C [N - 1:0][N - 1:0]
+	 
+	 
 );
 
 
@@ -48,7 +53,7 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
     // Registros privados
     logic [WIDTH - 1:0] matrix_A [N - 1:0][N - 1:0];
     logic [WIDTH - 1:0] matrix_B [N - 1:0][N - 1:0];
-    logic [WIDTH - 1:0] matrix_C [N - 1:0][N - 1:0];
+    // logic [WIDTH - 1:0] matrix_C [N - 1:0][N - 1:0];
 
     // Flip-flops
     logic [7:0] cycle_count_next;
@@ -110,7 +115,7 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
         done_next           = done;
         fsm_state_next_stepping_next = fsm_state_next_stepping;
         total_cycles_next = total_cycles;
-        overflow_next = overflow_in;
+        overflow_next = overflow_out | overflow_in;
         
         for (int i = 0; i < N; i++) begin
             data_up_next[i] = data_up[i];
@@ -132,7 +137,7 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
                 if (new_data) begin 
                     done_next = 0; // No se ha terminado la operacion
 						  total_cycles_next = 0;
-                    //overflow_next = 0; // Reiniciar overflow
+                    overflow_next = 0; // Reiniciar overflow
 								  
 						 if (stepping_enable) begin
                         fsm_state_next = WAITING_STEP; // Esperando el paso de stepping
@@ -223,7 +228,7 @@ module SystolicController #(parameter N = 4, parameter int WIDTH = 16) (
                         matrix_C[(cycle_count - 1) % N][j] = result_col[j];
 
                     // Para marcar el overflow
-                    if (overflow_in && overflow_out == 0) 
+                    if (overflow_in) 
                         overflow_next = 1; // Si hay overflow, se marca
                     
                 end

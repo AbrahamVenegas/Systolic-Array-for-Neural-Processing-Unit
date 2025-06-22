@@ -13,7 +13,7 @@ module SystolicTemp_tb;
     logic clk, rst, new_data;
     logic signed [WIDTH-1:0] mem_read;
     logic unsigned [11:0] addr_A, addr_B, addr_C;
-    logic unsigned [3:0] n;
+    logic unsigned [8:0] n;
 	 logic signed [WIDTH-1:0] result_col [N - 1:0];
     logic mem_write;
 	 logic unsigned [7:0] cycle_count;
@@ -44,38 +44,48 @@ module SystolicTemp_tb;
 	 
 	 logic overflow_out;
 	 
-	 
+	 logic ReLU_activation;
 
-    // Instancia del DUT
-    SystolicTemp #(.N(N), .WIDTH(WIDTH)) uut (
-        .clk(clk),
-        .rst(rst),
-        .new_data(new_data),
-        .mem_read(mem_read),
-        .addr_A(addr_A),
-        .addr_B(addr_B),
-        .addr_C(addr_C),
-        .n(n),
-        .mem_write(mem_write),
-        .mem_data_write(mem_data_write),
-        .act_addr(act_addr),
-        .weight_output(weight_output),
-        .data_up(data_up),
-        .result_col(result_col),
-        .fsm_state(fsm_state),
-		  .cycle_count(cycle_count),
-          .int_ops(int_ops),
-          .enable_out(enable),
-			 
-          .stepping_enable(stepping_enable),
-        .step(step),
-        .fsm_state_next(fsm_state_next),
-        .fsm_state_next_stepping(fsm_state_next_stepping),
-		  .fsm_state_next_stepping_next(fsm_state_next_stepping_next),
-		  .done(done),
-		  .total_cycles(total_cycles),
-		  .overflow_out(overflow_out)
-    );
+    system_status_t system_status;
+    memory_status_t memory_status;
+    error_code_t error_code;
+	 
+	 
+//
+//    // Instancia del DUT
+//    SystolicTemp #(.N(N), .WIDTH(WIDTH)) uut (
+//        .clk(clk),
+//        .rst(rst),
+//        .new_data(new_data),
+//        .mem_read(mem_read),
+//        .addr_A(addr_A),
+//        .addr_B(addr_B),
+//        .addr_C(addr_C),
+//        .n(n),
+//        .mem_write(mem_write),
+//        .mem_data_write(mem_data_write),
+//        .act_addr(act_addr),
+//        .weight_output(weight_output),
+//        .data_up(data_up),
+//        .result_col(result_col),
+//        .fsm_state(fsm_state),
+//		  .cycle_count(cycle_count),
+//          .int_ops(int_ops),
+//          .enable_out(enable),
+//			 
+//          .stepping_enable(stepping_enable),
+//        .step(step),
+//        .fsm_state_next(fsm_state_next),
+//        .fsm_state_next_stepping(fsm_state_next_stepping),
+//		  .fsm_state_next_stepping_next(fsm_state_next_stepping_next),
+//		  .done(done),
+//		  .total_cycles(total_cycles),
+//		  .overflow_out(overflow_out),
+//		  .ReLU_activation(ReLU_activation),
+//        .system_status(system_status),
+//        .memory_status(memory_status),
+//        .error_code(error_code)
+//    );
 
     // Generador de reloj
     initial begin
@@ -92,12 +102,13 @@ module SystolicTemp_tb;
         addr_B = 12'd16;
         addr_C = 12'd32;
         n = N;
+		  ReLU_activation = 1;
 
         // Probar stepping
         stepping_enable = 0; // Habilita el modo stepping
 
         // Quita reset y lanza operación
-        #12;
+        #10;
         rst = 0;
         #10;
         new_data = 1;

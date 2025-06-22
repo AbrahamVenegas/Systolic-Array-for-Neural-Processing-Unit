@@ -11,7 +11,9 @@ module PEMatrix #(parameter WIDTH = 16)
 	output logic signed [WIDTH-1:0] out_right [3:0],
 	output logic signed [WIDTH-1:0] out_down  [3:0],
 	output logic [31:0] int_ops,
-	output logic overflow
+	output logic overflow,
+	
+	input ReLU_activation
 
 );
 
@@ -77,7 +79,8 @@ module PEMatrix #(parameter WIDTH = 16)
 			ReLU #(.WIDTH(WIDTH)) relu_inst
 			(
 				.in_val(link_h[i][4]),
-				.out_val(out_right[i])
+				.out_val(out_right[i]),
+				.ReLU_activation(ReLU_activation)
 			);
 		end
 		

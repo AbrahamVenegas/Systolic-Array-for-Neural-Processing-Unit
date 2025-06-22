@@ -23,6 +23,7 @@ module PE #(parameter int WIDTH = 16)
 
 	always_ff @(posedge clk or posedge rst) begin
 		if (rst) begin
+			calc_full      <= 0;
 			calc      <= 0;
 			int_op_counter <= 0;
 		end else begin
@@ -30,7 +31,11 @@ module PE #(parameter int WIDTH = 16)
 				calc_full      <= (in_up * weight) + in_left;
                 calc           <= (in_up * weight) + in_left;
                 int_op_counter <= int_op_counter + 2;
-            end
+         end else begin
+				calc_full      <= 0;
+                calc           <= 0;
+                int_op_counter <= int_op_counter;
+			end
 		end
 	end
 
