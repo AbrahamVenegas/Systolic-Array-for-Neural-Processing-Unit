@@ -20,7 +20,11 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
     output logic unsigned [31:0] int_ops,
     output logic signed [WIDTH - 1:0] matrix_C [N - 1:0][N - 1:0],
     output logic unsigned [11:0] act_addr,
-    output logic signed [WIDTH - 1:0] mem_read
+    output logic signed [WIDTH - 1:0] mem_read,
+
+    // Para controlar memoria desde FPGA
+    input logic unsigned [11:0] act_addr_FPGA,
+    input logic switch_mem_access
 
 
     // Temporales
@@ -141,9 +145,13 @@ module SystolicTemp #(parameter N = 4, parameter int WIDTH = 16) (
         .overflow(overflow),
 		  .ReLU_activation(ReLU_activation)
     );
+
+    // Elegir entre la dirección de memoria manual o la dirección del controlador
+    logic unsigned [11:0] addr_ctrl;
+    assign addr_ctrl = (switch_mem_access) ? act_addr_FPGA : act_addr;
 	 
 	 Memory mem_inst (
-		  .address(act_addr),
+		  .address(addr_ctrl),
         .clock(~clk),
         .data(mem_data_write),
         .wren(mem_write),
